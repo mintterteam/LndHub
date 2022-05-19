@@ -223,14 +223,15 @@ router.post('/lnurl', postLimiter, async function (req, res) {
   res.send({ lnurl: lnurlstring });
   
 });
+
 /*
-router.post('/payevent', postLimiter, async function (req, res) {
+router.get('/payevent', async function (req, res) {
   logger.log('/payevent', [req.id]);
-  if (!req.body.login) return errorBadArguments(res);
+  if (!req.query.id) return errorBadArguments(res);
 
   let u = new User(redis, bitcoinclient, lightning);
-  if (!(await u.loadByLogin(req.body.login))) {
-    return errorLoginNotFound(res);
+  if (!(await u.loadByLogin(req.query.id))) {
+    return errorIdNotFound(res);
   }
   logger.log('/payevent', [req.id, 'userid: ' + u.getUserId()]);
 
@@ -662,6 +663,6 @@ function errorIdNotFound(res) {
   return res.send({
     error: true,
     code: 12,
-    message: 'The id provided is not a valid user',
+    message: 'Not a valid id',
   });
 }
