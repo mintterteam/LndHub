@@ -58,7 +58,7 @@ export class User {
 
   async loadByIdHash(idHash) {
     if (!idHash) return false;
-    let userid = await this._redis.get('userid_for_' + this._hash(idHash));
+    let userid = await this._redis.get('userid_for_' + idHash);
 
     if (userid) {
       this._userid = userid;

@@ -207,7 +207,7 @@ router.post('/addinvoice', postLimiter, async function (req, res) {
 
 router.post('/lnurl', postLimiter, async function (req, res) {
   logger.log('/lnurl', [req.id]);
-  if (!req.body.amt || (req.body.amt < 0) || !req.body.memo || !req.body.id) return errorBadArguments(res);
+  if (!req.body.amt || (req.body.amt < 0) || !req.body.memo || !/^[a-zA-Z]+$/.test(req.body.memo) || !req.body.id) return errorBadArguments(res);
 
   let u = new User(redis, bitcoinclient, lightning);
   if (!(await u.loadByIdHash(req.body.id))) {
@@ -215,7 +215,7 @@ router.post('/lnurl', postLimiter, async function (req, res) {
   }
   logger.log('/lnurl', [req.id, 'userid: ' + u.getUserId()]);
 
-  let url = config.lnurl+'/pizza?id='+u.getUserId();
+  let url = config.lnurl+'/fund?id='+u.getUserId()+'&memo='+req.body.memo.replace(" ", "_");
   logger.log('/lnurl', [req.id, 'url: ' + url]);
   let words = bech32.toWords(Buffer.from(url, 'utf8'));
   if (words.length > 250) {
@@ -224,21 +224,20 @@ router.post('/lnurl', postLimiter, async function (req, res) {
   }
   let lnurlstring = bech32.encode('LNURL', words, 256).toUpperCase();
   
-  logger.log('/lnurl', [req.id, 'lnurlstr:'+lnurlstring]);
   res.send({ lnurl: lnurlstring });
   
 });
 
 /*
-router.get('/pizza', async function (req, res) {
-  logger.log('/pizza', [req.id]);
+router.get('/fund', async function (req, res) {
+  logger.log('/fund', [req.id]);
   if (!req.query.id) return errorBadArguments(res);
 
   let u = new User(redis, bitcoinclient, lightning);
   if (!(await u.loadByIdHash(req.query.id))) {
     return errorIdNotFound(res);
   }
-  logger.log('/pizza', [req.id, 'userid: ' + u.getUserId()]);
+  logger.log('/fund', [req.id, 'userid: ' + u.getUserId()]);
 
   const invoice = new Invo(redis, bitcoinclient, lightning);
   const r_preimage = invoice.makePreimageHex();
