@@ -207,11 +207,11 @@ router.post('/addinvoice', postLimiter, async function (req, res) {
 
 router.post('/lnurl', postLimiter, async function (req, res) {
   logger.log('/lnurl', [req.id]);
-  if (!req.body.amt || !(req.body.amt < 0) || !req.body.memo || !req.body.login) return errorBadArguments(res);
+  if (!req.body.amt || (req.body.amt < 0) || !req.body.memo || !req.body.id) return errorBadArguments(res);
 
   let u = new User(redis, bitcoinclient, lightning);
-  if (!(await u.loadByLogin(req.body.login))) {
-    return errorLoginNotFound(res);
+  if (!(await u.loadById(req.body.id))) {
+    return errorIdNotFound(res);
   }
   logger.log('/lnurl', [req.id, 'userid: ' + u.getUserId()]);
 
@@ -658,10 +658,10 @@ function errorSunsetAddInvoice(res) {
   });
 }
 
-function errorLoginNotFound(res) {
+function errorIdNotFound(res) {
   return res.send({
     error: true,
     code: 12,
-    message: 'The login provided is not a valid user',
+    message: 'The id provided is not a valid user',
   });
 }
