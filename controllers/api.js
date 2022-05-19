@@ -216,6 +216,7 @@ router.post('/lnurl', postLimiter, async function (req, res) {
   logger.log('/lnurl', [req.id, 'userid: ' + u.getUserId()]);
 
   let url = config.lnurl+'/payevent?id='+u.getUserId();
+  logger.log('/lnurl', [req.id, 'url: ' + url]);
   let words = bech32.toWords(Buffer.from(url, 'utf8'));
   let lnurlstring = bech32.encode('LNURL', words).toUpperCase();
   
@@ -235,12 +236,20 @@ router.get('/payevent', async function (req, res) {
   }
   logger.log('/payevent', [req.id, 'userid: ' + u.getUserId()]);
 
-  let url = config.lnurl+'/pay?login='+u.getUserId();
-  let words = bech32.toWords(Buffer.from(url, 'utf8'));
-  let lnurlstring = bech32.encode('LNURL', words).toUpperCase();
-  
-  logger.log('/payevent', [req.id, 'lnurlstr:'+lnurlstring]);
-  res.send({ lnurl: lnurlstring });
+  const invoice = new Invo(redis, bitcoinclient, lightning);
+  const r_preimage = invoice.makePreimageHex();
+  lightning.addInvoice(
+    { memo: req.body.memo, value: req.body.amt, expiry: 3600 * 24, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
+    async function (err, info) {
+      if (err) return errorLnd(res);
+
+      info.pay_req = info.payment_request; // client backwards compatibility
+      await u.saveUserInvoice(info);
+      await invoice.savePreimage(r_preimage);
+
+      res.send(info);
+    },
+  );
   
 });
 */
