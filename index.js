@@ -3,6 +3,11 @@ process.on('uncaughtException', function (err) {
   console.log('Node NOT Exiting...');
 });
 
+process.on('SIGINT', () => {
+  console.log('SIGINT caught. Exiting...');
+  process.exit(0)
+})
+
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 let express = require('express');
 const helmet = require('helmet');
