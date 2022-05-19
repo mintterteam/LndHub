@@ -1,4 +1,4 @@
-const important_channels = {
+const important_channels = {/*
   '03864ef025fde8fb587d989186ce6a4a186895ee44a926bfc370e2c366597a3f8f': {
     name: 'ACINQ',
     uri: '03864ef025fde8fb587d989186ce6a4a186895ee44a926bfc370e2c366597a3f8f@34.239.230.56:9735',
@@ -71,7 +71,7 @@ const important_channels = {
   //   name: 'tippin.me',
   //   uri: '03c2abfa93eacec04721c019644584424aab2ba4dff3ac9bdab4e9c97007491dda@157.245.68.47:9735',
   // },
-};
+*/};
 
 let lightning = require('../lightning');
 
@@ -83,7 +83,7 @@ lightning.listChannels({}, function (err, response) {
   }
   let lightningListChannels = response;
   for (let channel of lightningListChannels.channels) {
-    if (channel.capacity <= 1000000) {
+    if (channel.capacity <= 100000) {
       console.log(
         'lncli closechannel',
         channel.channel_point.replace(':', ' '),
