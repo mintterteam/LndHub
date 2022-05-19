@@ -56,9 +56,9 @@ export class User {
     return false;
   }
 
-  async loadById(id) {
-    if (!id) return false;
-    let userid = await this._redis.get('userid_for_' + id);
+  async loadByIdHash(idHash) {
+    if (!idHash) return false;
+    let userid = await this._redis.get('userid_for_' + this._hash(idHash));
 
     if (userid) {
       this._userid = userid;
@@ -512,7 +512,7 @@ export class User {
   async _saveUserToDatabase() {
     let key;
     await this._redis.set((key = 'user_' + this._login + '_' + this._hash(this._password)), this._userid);
-    await this._redis.set('userid_for_' + this._userid, this._userid);
+    await this._redis.set('userid_for_' + this._hash(this._userid), this._userid);
   }
 
   /**
