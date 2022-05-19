@@ -215,7 +215,7 @@ router.post('/lnurl', postLimiter, async function (req, res) {
   }
   logger.log('/lnurl', [req.id, 'userid: ' + u.getUserId()]);
 
-  let url = config.lnurl+'/pay?login='+u.getUserId();
+  let url = config.lnurl+'/payevent?login='+u.getUserId();
   let words = bech32.toWords(Buffer.from(url, 'utf8'));
   let lnurlstring = bech32.encode('LNURL', words).toUpperCase();
   
@@ -223,8 +223,26 @@ router.post('/lnurl', postLimiter, async function (req, res) {
   res.send({ lnurl: lnurlstring });
   
 });
+/*
+router.post('/payevent', postLimiter, async function (req, res) {
+  logger.log('/payevent', [req.id]);
+  if (!req.body.login) return errorBadArguments(res);
 
-Buffer.from(requestByteArray).toString()
+  let u = new User(redis, bitcoinclient, lightning);
+  if (!(await u.loadByLogin(req.body.login))) {
+    return errorLoginNotFound(res);
+  }
+  logger.log('/payevent', [req.id, 'userid: ' + u.getUserId()]);
+
+  let url = config.lnurl+'/pay?login='+u.getUserId();
+  let words = bech32.toWords(Buffer.from(url, 'utf8'));
+  let lnurlstring = bech32.encode('LNURL', words).toUpperCase();
+  
+  logger.log('/payevent', [req.id, 'lnurlstr:'+lnurlstring]);
+  res.send({ lnurl: lnurlstring });
+  
+});
+*/
 router.post('/payinvoice', async function (req, res) {
   let u = new User(redis, bitcoinclient, lightning);
   if (!(await u.loadByAuthorization(req.headers.authorization))) {
