@@ -503,7 +503,6 @@ export class User {
     buffer = crypto.randomBytes(20);
     this._refresh_token = buffer.toString('hex');
 
-    await this._redis.set('userid_for_' + this.this._userid, this._userid);
     await this._redis.set('userid_for_' + this._acess_token, this._userid);
     await this._redis.set('userid_for_' + this._refresh_token, this._userid);
     await this._redis.set('access_token_for_' + this._userid, this._acess_token);
@@ -513,6 +512,7 @@ export class User {
   async _saveUserToDatabase() {
     let key;
     await this._redis.set((key = 'user_' + this._login + '_' + this._hash(this._password)), this._userid);
+    await this._redis.set('userid_for_' + this.this._userid, this._userid);
   }
 
   /**
