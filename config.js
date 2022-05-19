@@ -5,7 +5,8 @@ let config = {
   forwardReserveFee: 0.01, // default 0.01
   intraHubFee: 0.003, // default 0.003
   bitcoind: {
-    rpc: 'http://login:password@1.1.1.1:8332/wallet/wallet.dat',
+    rpc: 'http://login:password@1.1.1.1:8332',
+    wallet: 'wallet.dat',
   },
   redis: {
     port: 12914,
