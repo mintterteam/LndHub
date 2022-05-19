@@ -512,7 +512,7 @@ export class User {
   async _saveUserToDatabase() {
     let key;
     await this._redis.set((key = 'user_' + this._login + '_' + this._hash(this._password)), this._userid);
-    await this._redis.set('userid_for_' + this.this._userid, this._userid);
+    await this._redis.set('userid_for_' + this._userid, this._userid);
   }
 
   /**

@@ -215,7 +215,7 @@ router.post('/lnurl', postLimiter, async function (req, res) {
   }
   logger.log('/lnurl', [req.id, 'userid: ' + u.getUserId()]);
 
-  let url = config.lnurl+'/payevent?login='+u.getUserId();
+  let url = config.lnurl+'/payevent?id='+u.getUserId();
   let words = bech32.toWords(Buffer.from(url, 'utf8'));
   let lnurlstring = bech32.encode('LNURL', words).toUpperCase();
   
