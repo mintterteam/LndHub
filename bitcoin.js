@@ -7,13 +7,13 @@ if (config.bitcoind) {
   rpc.timeout = 5000;
   let bitcoinclient = jayson.client.http(rpc)
   bitcoinclient.request('createwallet', [config.bitcoind.wallet], function (err, info) {
-    if (err && !err.includes("already exists")) {
+    if (err && err.message && !err.message.includes("already exists")) {
       console.log('could not create wallet:', err, info);
       process.exit(1);
     }
   });
   bitcoinclient.request('loadwallet', [config.bitcoind.wallet], function (err, info) {
-    if (err && !err.includes("already loaded")) {
+    if (err && err.message && !err.message.includes("already loaded")) {
       console.log('could not load wallet:', err, info);
       process.exit(2);
     }
