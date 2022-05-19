@@ -58,7 +58,7 @@ export class User {
 
   async loadById(id) {
     if (!id) return false;
-    let userid = await this._redis.get('userid_for_' + id);
+    let userid = await this._redis.get('user_' + id);
 
     if (userid) {
       this._userid = userid;
