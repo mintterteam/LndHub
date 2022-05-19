@@ -4,6 +4,7 @@ let config = {
   rateLimit: 200,
   forwardReserveFee: 0.01, // default 0.01
   intraHubFee: 0.003, // default 0.003
+  lnurl: 'https://ln.testnet.mintter.com',
   bitcoind: {
     rpc: 'http://login:password@1.1.1.1:8332',
     wallet: 'wallet.dat',

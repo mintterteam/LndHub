@@ -56,6 +56,18 @@ export class User {
     return false;
   }
 
+  async loadByLogin(login) {
+    if (!login) return false;
+    let userid = await this._redis.get('userid_for_' + login);
+
+    if (userid) {
+      this._userid = userid;
+      return true;
+    }
+
+    return false;
+  }
+  
   async loadByRefreshToken(refresh_token) {
     let userid = await this._redis.get('userid_for_' + refresh_token);
     if (userid) {

@@ -4,6 +4,7 @@ const config = require('../config');
 let express = require('express');
 let router = express.Router();
 let logger = require('../utils/logger');
+let { bech32 }  = require("bech32")
 const MIN_BTC_BLOCK = 670000;
 if (process.env.NODE_ENV !== 'prod') {
   console.log('using config', JSON.stringify(config));
@@ -204,6 +205,26 @@ router.post('/addinvoice', postLimiter, async function (req, res) {
   );
 });
 
+router.post('/lnurl', postLimiter, async function (req, res) {
+  logger.log('/lnurl', [req.id]);
+  if (!req.body.amt || !(req.body.amt < 0) || !req.body.memo || !req.body.login) return errorBadArguments(res);
+
+  let u = new User(redis, bitcoinclient, lightning);
+  if (!(await u.loadByLogin(req.body.login))) {
+    return errorLoginNotFound(res);
+  }
+  logger.log('/lnurl', [req.id, 'userid: ' + u.getUserId()]);
+
+  let url = config.lnurl+'/pay?login='+u.getUserId();
+  let words = bech32.toWords(Buffer.from(url, 'utf8'));
+  let lnurlstring = bech32.encode('LNURL', words).toUpperCase();
+  
+  logger.log('/lnurl', [req.id, 'lnurlstr:'+lnurlstring]);
+  res.send({ lnurl: lnurlstring });
+  
+});
+
+Buffer.from(requestByteArray).toString()
 router.post('/payinvoice', async function (req, res) {
   let u = new User(redis, bitcoinclient, lightning);
   if (!(await u.loadByAuthorization(req.headers.authorization))) {
@@ -616,5 +637,13 @@ function errorSunsetAddInvoice(res) {
     error: true,
     code: 11,
     message: 'This LNDHub instance is scheduled to shut down. Withdraw any remaining funds',
+  });
+}
+
+function errorLoginNotFound(res) {
+  return res.send({
+    error: true,
+    code: 12,
+    message: 'The login provided is not a valid user',
   });
 }
