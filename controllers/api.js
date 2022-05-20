@@ -275,10 +275,10 @@ router.get('/lnurlp/:id_hash/:payment_hash', async function (req, res) {
   }
 
   const invoice = await u.lookupInvoice(req.params.payment_hash);
-  if (!invoice) {
+  if (!invoice || !Object.keys(invoice).length) {
     return errorLnurlNoInvoice(res);
   }
-  logger.log('lnurlp', [invoice])
+
   if (invoice.settled) {
     return errorLnurlAlreadyPaid(res);
   }
