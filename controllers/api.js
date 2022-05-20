@@ -5,6 +5,7 @@ let express = require('express');
 let router = express.Router();
 let logger = require('../utils/logger');
 let { bech32 }  = require("bech32")
+var crypto = require('crypto');
 const MIN_BTC_BLOCK = 670000;
 if (process.env.NODE_ENV !== 'prod') {
   console.log('using config', JSON.stringify(config));
@@ -215,7 +216,7 @@ router.post('/lnurl', postLimiter, async function (req, res) {
   }
   logger.log('/lnurl', [req.id, 'userid: ' + u.getUserId()]);
 
-  let url = config.lnurl+'/fund/'+u.getUserId()+'/'+req.body.memo.replace(" ", "_")+'/'+req.body.amt;
+  let url = config.lnurl+'/fund?id='+u.getUserId()+'&memo='+req.body.memo.replace(" ", "_")+'&amt='+req.body.amt;
   logger.log('/lnurl', [req.id, 'url: ' + url]);
   let words = bech32.toWords(Buffer.from(url, 'utf8'));
   if (words.length > 250) {
@@ -228,24 +229,24 @@ router.post('/lnurl', postLimiter, async function (req, res) {
   
 });
 
-router.get('/fund/:id_hash/:memo/:amt', async function (req, res) {
+router.get('/fund', async function (req, res) {
   logger.log('/fund', [req.id]);
   
-  if (!req.params.amt || (parseInt(req.params.amt, 10) < 0) || (parseInt(req.params.amt, 10) > 1000000) || !req.params.id_hash || !req.params.memo || !/^[a-zA-Z]+$/.test(req.params.memo) || req.params.memo.length > 64) {
-    logger.log('req.params', [req.params])
+  if (!req.query.amt || (parseInt(req.query.amt, 10) < 0) || (parseInt(req.query.amt, 10) > 1000000) || !req.query.id || !req.query.memo || !/^[a-zA-Z]+$/.test(req.query.memo) || req.query.memo.length > 64) {
+    logger.log('req.query', [req.query])
     return errorLnurlBadArguments(res);
   }
   let u = new User(redis, bitcoinclient, lightning);
-  if (!(await u.loadByIdHash(req.params.id_hash))) {
+  if (!(await u.loadByIdHash(req.query.id))) {
     return errorLnurlBadId(res);
   }
   logger.log('/fund', [req.id, 'userid: ' + u.getUserId()]);
-  let url = config.lnurl+'/lnurlp/'+req.params.id_hash+'/'
+  let url = config.lnurl+'/lnurlp/'+req.query.id+'/'
   const invoice = new Invo(redis, bitcoinclient, lightning);
   const r_preimage = invoice.makePreimageHex();
-  let amount = parseInt(req.params.amt, 10)
+  let amount = parseInt(req.query.amt, 10)
   lightning.addInvoice(
-    { memo: req.params.memo, value: amount, expiry: 3600 * 24 * 3, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
+    { memo: req.query.memo, value: amount, expiry: 3600 * 24 * 3, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
     async function (err, info) {
       if (err) return errorLnurlLND(res);
 
@@ -257,7 +258,7 @@ router.get('/fund/:id_hash/:memo/:amt', async function (req, res) {
         callback: url+crypto.createHash('sha256').update(r_preimage).digest().toString('hex')(), 
         maxSendable: amount * 1000,                      
         minSendable: amount * 1000,                      
-        metadata: '[[\"text/plain\", \"'+req.params.memo+'\"]]', 
+        metadata: '[[\"text/plain\", \"'+req.query.memo+'\"]]', 
         tag: "payRequest"                                       
       });
     },
