@@ -262,8 +262,8 @@ router.get('/lnurlp/:id_hash/:memo/:amt', postLimiter, async function (req, res)
     return errorLnurlBadId(res);
   }
 
-  const invoice = new Invo(redis, bitcoinclient, lightning);
-  const r_preimage = invoice.makePreimageHex();
+  const invo = new Invo(redis, bitcoinclient, lightning);
+  const r_preimage = invo.makePreimageHex();
 
   let amount = parseInt(req.params.amt, 10)
   let h = '[["text/plain", "'+req.params.memo+'"]]'
@@ -283,15 +283,34 @@ router.get('/lnurlp/:id_hash/:memo/:amt', postLimiter, async function (req, res)
       }
       info.pay_req = info.payment_request; // client backwards compatibility
       await u.saveUserInvoice(info);
-      await invoice.savePreimage(r_preimage);
-      logger.log('/lnurlp', [req.id, 'Invoice:' + invoice, 'r_preimage:' + r_preimage]);
-      res.send({
-        pr: invoice.payment_request,
-        routes: []
-      });
+      await invo.savePreimage(r_preimage);
+    
     },
   );
 
+  let p_hash = require('crypto').createHash('sha256').update(Buffer.from(r_preimage, 'hex')).digest('hex')
+  const invoice = await u.lookupInvoice(p_hash);
+  if (!invoice || !Object.keys(invoice).length) {
+    return errorLnurlNoInvoice(res);
+  }
+
+  logger.log('/lnurlp', [req.id, 'invoice' + invoice]);
+  if (invoice.settled) {
+    return errorLnurlAlreadyPaid(res);
+  }
+
+  if (invoice.state != "OPEN") {
+    return errorLnurlInvoiceNotOpened(res);
+  }
+
+  if (parseInt(invoice.value_msat,10) != parseInt(req.query.amount, 10)){
+    return errorLnurlBadAmount(res);
+  }
+
+  res.send({
+    pr: invoice.payment_request,
+    routes: []
+  });
 });
 
 router.post('/payinvoice', async function (req, res) {
