@@ -243,11 +243,12 @@ router.get('/fund', postLimiter, async function (req, res) {
   let url = config.lnurl+'/lnurlp/'+req.query.id+'/'
   const invoice = new Invo(redis, bitcoinclient, lightning);
   const r_preimage = invoice.makePreimageHex();
+
   let amount = parseInt(req.query.amt, 10)
   let h = '[["text/plain", "'+req.query.memo+'"]]'
   const description_h = require('crypto').createHash('sha256').update(Buffer.from(h)).digest('hex')
   lightning.addInvoice(
-    { description_hash: Buffer.from(description_h, 'hex').toString('base64'), value: amount, expiry: 3600 * 24 * 3, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
+    { memo: "test", description_hash: Buffer.from(description_h, 'hex').toString('base64'), value: amount, expiry: 3600 * 24 * 3, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
     async function (err, info) {
       if (err) {
         logger.log('/fund', [req.id, 'lnd error:' + err]);
@@ -263,7 +264,7 @@ router.get('/fund', postLimiter, async function (req, res) {
         minSendable: amount * 1000,                      
         metadata: '[[\"text/plain\", \"'+req.query.memo+'\"]]', 
         tag: "payRequest",
-        commentAllowed: 422                                
+        commentAllowed: 48                                
       });
     },
   );
@@ -294,6 +295,10 @@ router.get('/lnurlp/:id_hash/:payment_hash', postLimiter, async function (req, r
 
   if (parseInt(invoice.value_msat,10) != parseInt(req.query.amount, 10)){
     return errorLnurlBadAmount(res);
+  }
+
+  if (req.query.comment) {
+
   }
   res.send({
     pr: invoice.payment_request,
