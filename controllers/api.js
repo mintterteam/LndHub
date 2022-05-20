@@ -273,7 +273,7 @@ router.get('/lnurlp/:id_hash/:memo/:amt', postLimiter, async function (req, res)
   if (req.query.comment && req.query.comment.length > 0) {
     comment = req.query.comment
   } 
-  logger.log('coment:', [comment]);
+  logger.log('comment:', [comment]);
   lightning.addInvoice(
     { memo: comment, description_hash: Buffer.from(description_h, 'hex').toString('base64'), value: amount, expiry: 3600 * 24 * 3, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
     async function (err, info) {
@@ -282,7 +282,7 @@ router.get('/lnurlp/:id_hash/:memo/:amt', postLimiter, async function (req, res)
         return errorLnurlLND(res);
       }
       info.pay_req = info.payment_request; // client backwards compatibility
-      info.comment = comment
+      info.comment = comment // To be displayed in the frontend otherwise the field from the invoice is taken
       await u.saveUserInvoice(info);
       await invo.savePreimage(r_preimage);
 
