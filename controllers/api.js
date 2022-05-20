@@ -267,14 +267,14 @@ router.get('/fund', async function (req, res) {
 
 router.get('/lnurlp/:id_hash/:payment_hash', async function (req, res) {
   logger.log('/lnurlp', [req.id]);
-  if (!req.query.amount || (parseInt(req.query.amount, 10) < 0)) return errorLnurlBadArguments(res);
+  if (!req.query.amount || (parseInt(req.query.amount, 10) < 0) || !req.params.payment_hash || req.params.id_hash) return errorLnurlBadArguments(res);
 
   let u = new User(redis, bitcoinclient, lightning);
   if (!(await u.loadByIdHash(req.params.id_hash))) {
     return errorLnurlBadId(res);
   }
   const invo = new Invo(redis, bitcoinclient, lightning);
-  let invoice = await invo.lookupInvoice(payment_hash);
+  let invoice = await invo.lookupInvoice(req.params.payment_hash);
   if (!invoice ) {
     return errorLnurlNoInvoice(res);
   }
