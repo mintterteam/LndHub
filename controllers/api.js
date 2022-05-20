@@ -289,6 +289,7 @@ router.get('/lnurlp/:id_hash/:memo/:amt', postLimiter, async function (req, res)
   );
 
   let p_hash = require('crypto').createHash('sha256').update(Buffer.from(r_preimage, 'hex')).digest('hex')
+  logger.log('/lnurlp', [req.id, 'p_hash:' + p_hash, 'r_preimage:' + r_preimage]);
   const invoice = await u.lookupInvoice(p_hash);
   if (!invoice || !Object.keys(invoice).length) {
     return errorLnurlNoInvoice(res);
