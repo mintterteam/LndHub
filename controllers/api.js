@@ -282,7 +282,7 @@ router.get('/lnurlp/:id_hash/:memo/:amt', postLimiter, async function (req, res)
         return errorLnurlLND(res);
       }
       info.pay_req = info.payment_request; // client backwards compatibility
-      info.d = comment
+      info.description = comment
       await u.saveUserInvoice(info);
       await invo.savePreimage(r_preimage);
 
