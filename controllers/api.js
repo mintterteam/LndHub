@@ -254,7 +254,7 @@ router.get('/fund', async function (req, res) {
       await invoice.savePreimage(r_preimage);
       
       res.send({
-        callback: url+invoice.payment_hash, 
+        callback: url+require('crypto').createHash('sha256').update(Buffer.from(r_preimage, 'hex')).digest('hex'), 
         maxSendable: amount * 1000,                      
         minSendable: amount * 1000,                      
         metadata: '[[\"text/plain\", \"'+req.query.memo+'\"]]', 
