@@ -207,7 +207,7 @@ router.post('/addinvoice', postLimiter, async function (req, res) {
 
 router.post('/lnurl', postLimiter, async function (req, res) {
   logger.log('/lnurl', [req.id]);
-  if (!req.body.amt || (req.body.amt < 0) || !req.body.memo || !/^[a-zA-Z]+$/.test(req.body.memo) || !req.body.id) return errorBadArguments(res);
+  if (!req.body.amt || (req.body.amt < 0) || (req.body.amt > 1000000) || !req.body.memo || !/^[a-zA-Z]+$/.test(req.body.memo) || !req.body.id) return errorBadArguments(res);
 
   let u = new User(redis, bitcoinclient, lightning);
   if (!(await u.loadByIdHash(req.body.id))) {
@@ -215,7 +215,7 @@ router.post('/lnurl', postLimiter, async function (req, res) {
   }
   logger.log('/lnurl', [req.id, 'userid: ' + u.getUserId()]);
 
-  let url = config.lnurl+'/fund?id='+u.getUserId()+'&memo='+req.body.memo.replace(" ", "_");
+  let url = config.lnurl+'/fund?id='+u.getUserId()+'&memo='+req.body.memo.replace(" ", "_")+'&amt='+req.body.amt;
   logger.log('/lnurl', [req.id, 'url: ' + url]);
   let words = bech32.toWords(Buffer.from(url, 'utf8'));
   if (words.length > 250) {
@@ -228,34 +228,63 @@ router.post('/lnurl', postLimiter, async function (req, res) {
   
 });
 
-/*
 router.get('/fund', async function (req, res) {
   logger.log('/fund', [req.id]);
-  if (!req.query.id) return errorBadArguments(res);
+  if (!req.body.amt || (req.body.amt < 0) || (req.body.amt > 1000000) || !req.query.id || !req.query.memo || !/^[a-zA-Z]+$/.test(req.query.memo) || req.query.memo.length > 64) return errorLnurlBadArguments(res);
 
   let u = new User(redis, bitcoinclient, lightning);
   if (!(await u.loadByIdHash(req.query.id))) {
-    return errorIdNotFound(res);
+    return errorLnurlBadId(res);
   }
   logger.log('/fund', [req.id, 'userid: ' + u.getUserId()]);
-
+  let url = config.lnurl+'/lnurlp/'+req.query.id+'/'
   const invoice = new Invo(redis, bitcoinclient, lightning);
   const r_preimage = invoice.makePreimageHex();
   lightning.addInvoice(
-    { memo: req.body.memo, value: req.body.amt, expiry: 3600 * 24, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
+    { memo: req.query.memo, value: req.query.amt, expiry: 3600 * 24 * 3, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
     async function (err, info) {
-      if (err) return errorLnd(res);
+      if (err) return errorLnurlLND(res);
 
       info.pay_req = info.payment_request; // client backwards compatibility
       await u.saveUserInvoice(info);
       await invoice.savePreimage(r_preimage);
-
-      res.send(info);
+      
+      res.send({
+        callback: url+crypto.createHash('sha256').update(r_preimage).digest().toString('hex')(), 
+        maxSendable: req.query.amt * 1000,                      
+        minSendable: req.query.amt * 1000,                      
+        metadata: '[[\"text/plain\", \"'+req.query.memo+'\"]]', 
+        tag: "payRequest"                                       
+      });
     },
   );
   
 });
-*/
+
+router.get('/lnurlp/:id_hash/:payment_hash', async function (req, res) {
+  logger.log('/lnurlp', [req.id]);
+  if (!req.params.amount || (req.params.amount < 0)) return errorLnurlBadArguments(res);
+
+  let u = new User(redis, bitcoinclient, lightning);
+  if (!(await u.loadByIdHash(req.params.id_hash))) {
+    return errorLnurlBadId(res);
+  }
+
+  if (!(invoice =(await u.lookupInvoice(req.params.payment_hash)))) {
+    return errorLnurlNoInvoice(res);
+  }
+
+  if (invoice.settled) {
+    return errorLnurlAlreadyPaid(res);
+  }
+
+  res.send({
+    pr: invoice.pay_req,
+    routes: []
+   });
+  
+});
+
 router.post('/payinvoice', async function (req, res) {
   let u = new User(redis, bitcoinclient, lightning);
   if (!(await u.loadByAuthorization(req.headers.authorization))) {
@@ -676,5 +705,41 @@ function errorIdNotFound(res) {
     error: true,
     code: 12,
     message: 'Not a valid id',
+  });
+}
+
+function errorLnurlBadArguments(res) {
+  return res.send({
+    status: "ERROR",
+    reason: "bad arguments",
+  });
+}
+
+function errorLnurlBadId(res) {
+  return res.send({
+    status: "ERROR",
+    reason: "bad id",
+  });
+}
+
+function errorLnurlLND(res) {
+  return res.send({
+    status: "ERROR",
+    reason: "cannot communicate with lnd",
+  });
+}
+
+function errorLnurlAlreadyPaid(res) {
+  return res.send({
+    status: "ERROR",
+    reason: "invoice already paid",
+  });
+}
+
+
+function errorLnurlNoInvoice(res) {
+  return res.send({
+    status: "ERROR",
+    reason: "provided payment hash not found",
   });
 }
