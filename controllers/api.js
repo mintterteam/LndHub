@@ -273,12 +273,14 @@ router.get('/lnurlp/:id_hash/:payment_hash', async function (req, res) {
   if (!(await u.loadByIdHash(req.params.id_hash))) {
     return errorLnurlBadId(res);
   }
-
-  if (!(invoice =(await u.lookupInvoice(req.params.payment_hash)))) {
+  const invo = new Invo(redis, bitcoinclient, lightning);
+  let invoice = await invo.lookupInvoice(payment_hash);
+  if (!invoice ) {
     return errorLnurlNoInvoice(res);
   }
 
-  if (invoice.settled) {
+  const paid = await invoice.getIsMarkedAsPaidInDatabase();
+  if (paid) {
     return errorLnurlAlreadyPaid(res);
   }
 
