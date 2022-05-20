@@ -240,18 +240,44 @@ router.get('/fund', postLimiter, async function (req, res) {
     return errorLnurlBadId(res);
   }
   logger.log('/fund', [req.id, 'userid: ' + u.getUserId()]);
-  let url = config.lnurl+'/lnurlp/'+req.query.id+'/'
+  let url = config.lnurl+'/lnurlp/'+req.query.id+'/'+req.query.memo+'/'+amount.toString(10)
+  res.send({
+    callback: url, 
+    maxSendable: amount * 1000,                      
+    minSendable: amount * 1000,                      
+    metadata: '[[\"text/plain\", \"'+req.query.memo+'\"]]', 
+    tag: "payRequest",
+    commentAllowed: 48                                
+  });
+  
+});
+
+router.get('/lnurlp/:id_hash/:memo/:amt', postLimiter, async function (req, res) {
+  logger.log('/lnurlp', [req.id]);
+  if (!req.params.amt || (parseInt(req.params.amt, 10) < 0) || !req.params.memo || !req.params.id_hash) return errorLnurlBadArguments(res);
+
+  let u = new User(redis, bitcoinclient, lightning);
+  if (!(await u.loadByIdHash(req.params.id_hash))) {
+    return errorLnurlBadId(res);
+  }
+
   const invoice = new Invo(redis, bitcoinclient, lightning);
   const r_preimage = invoice.makePreimageHex();
 
-  let amount = parseInt(req.query.amt, 10)
-  let h = '[["text/plain", "'+req.query.memo+'"]]'
+  let amount = parseInt(req.params.amt, 10)
+  let h = '[["text/plain", "'+req.params.memo+'"]]'
   const description_h = require('crypto').createHash('sha256').update(Buffer.from(h)).digest('hex')
+
+  let comment = require('crypto').createHash('sha256').update(Buffer.from(r_preimage, 'hex')).digest('hex')
+  if (req.query.comment) {
+    comment = req.query.comment
+  } 
+  
   lightning.addInvoice(
-    { memo: "test", description_hash: Buffer.from(description_h, 'hex').toString('base64'), value: amount, expiry: 3600 * 24 * 3, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
+    { memo: comment, description_hash: Buffer.from(description_h, 'hex').toString('base64'), value: amount, expiry: 3600 * 24 * 3, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
     async function (err, info) {
       if (err) {
-        logger.log('/fund', [req.id, 'lnd error:' + err]);
+        logger.log('/lnurlp', [req.id, 'lnd error:' + err]);
         return errorLnurlLND(res);
       }
       info.pay_req = info.payment_request; // client backwards compatibility
@@ -259,52 +285,12 @@ router.get('/fund', postLimiter, async function (req, res) {
       await invoice.savePreimage(r_preimage);
       
       res.send({
-        callback: url+require('crypto').createHash('sha256').update(Buffer.from(r_preimage, 'hex')).digest('hex'), 
-        maxSendable: amount * 1000,                      
-        minSendable: amount * 1000,                      
-        metadata: '[[\"text/plain\", \"'+req.query.memo+'\"]]', 
-        tag: "payRequest",
-        commentAllowed: 48                                
+        pr: invoice.payment_request,
+        routes: []
       });
     },
   );
-  
-});
 
-router.get('/lnurlp/:id_hash/:payment_hash', postLimiter, async function (req, res) {
-  logger.log('/lnurlp', [req.id]);
-  if (!req.query.amount || (parseInt(req.query.amount, 10) < 0) || !req.params.payment_hash || !req.params.id_hash) return errorLnurlBadArguments(res);
-
-  let u = new User(redis, bitcoinclient, lightning);
-  if (!(await u.loadByIdHash(req.params.id_hash))) {
-    return errorLnurlBadId(res);
-  }
-
-  const invoice = await u.lookupInvoice(req.params.payment_hash);
-  if (!invoice || !Object.keys(invoice).length) {
-    return errorLnurlNoInvoice(res);
-  }
-
-  if (invoice.settled) {
-    return errorLnurlAlreadyPaid(res);
-  }
-
-  if (invoice.state != "OPEN") {
-    return errorLnurlInvoiceNotOpened(res);
-  }
-
-  if (parseInt(invoice.value_msat,10) != parseInt(req.query.amount, 10)){
-    return errorLnurlBadAmount(res);
-  }
-
-  if (req.query.comment) {
-
-  }
-  res.send({
-    pr: invoice.payment_request,
-    routes: []
-  });
-  
 });
 
 router.post('/payinvoice', async function (req, res) {
