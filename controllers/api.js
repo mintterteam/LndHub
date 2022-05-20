@@ -250,7 +250,7 @@ router.get('/fund', postLimiter, async function (req, res) {
     { description_hash: Buffer.from(description_h, 'hex').toString('base64'), value: amount, expiry: 3600 * 24 * 3, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
     async function (err, info) {
       if (err) {
-        logger.log('/fund', [req.id, 'lnd error:' + err, 'description_h:' + description_h, 'description_hash:' + Buffer.from(description_h, 'hex').toString('hex'), 'r_preimage:' + r_preimage, 'r_preimageWire:' + Buffer.from(r_preimage, 'hex').toString('base64')]);
+        logger.log('/fund', [req.id, 'lnd error:' + err]);
         return errorLnurlLND(res);
       }
       info.pay_req = info.payment_request; // client backwards compatibility
@@ -262,7 +262,8 @@ router.get('/fund', postLimiter, async function (req, res) {
         maxSendable: amount * 1000,                      
         minSendable: amount * 1000,                      
         metadata: '[[\"text/plain\", \"'+req.query.memo+'\"]]', 
-        tag: "payRequest"                                       
+        tag: "payRequest",
+        commentAllowed: 422                                
       });
     },
   );
