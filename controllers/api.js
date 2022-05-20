@@ -283,6 +283,10 @@ router.get('/lnurlp/:id_hash/:payment_hash', async function (req, res) {
     return errorLnurlAlreadyPaid(res);
   }
 
+  if (invoice.state != "OPEN") {
+    return errorLnurlInvoiceNotOpened(res);
+  }
+
   if (parseInt(invoice.value_msat,10) != parseInt(req.query.amount, 10)){
     return errorLnurlBadAmount(res);
   }
@@ -756,5 +760,12 @@ function errorLnurlBadAmount(res) {
   return res.send({
     status: "ERROR",
     reason: "provided amount does not match expected",
+  });
+}
+
+function errorLnurlInvoiceNotOpened(res) {
+  return res.send({
+    status: "ERROR",
+    reason: "ivoice not ready to be paid (probably expired)",
   });
 }
