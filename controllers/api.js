@@ -241,7 +241,7 @@ router.get('/fund', postLimiter, async function (req, res) {
   }
   logger.log('/fund', [req.id, 'userid: ' + u.getUserId()]);
   let amount = parseInt(req.query.amt, 10)
-  let url = config.lnurl+'/lnurlp/'+req.query.id+'/'+req.query.memo+'/'+amount
+  let url = config.lnurl+'/lnurlp/'+req.query.id+'/'+req.query.memo+'/'+amount.toString(10)
   res.send({
     callback: url, 
     maxSendable: amount * 1000,                      
@@ -255,7 +255,7 @@ router.get('/fund', postLimiter, async function (req, res) {
 
 router.get('/lnurlp/:id_hash/:memo/:amt', postLimiter, async function (req, res) {
   logger.log('/lnurlp', [req.id]);
-  if (!req.params.amt || (parseInt(req.params.amt, 10) < 0) || !req.params.memo || !req.params.id_hash) return errorLnurlBadArguments(res);
+  if (!req.params.amt || (parseInt(req.params.amt, 10) < 0) || !req.query.amount || parseInt(req.query.amount,10) != parseInt(req.params.amt, 10) * 1000 || !req.params.memo || !req.params.id_hash) return errorLnurlBadArguments(res);
 
   let u = new User(redis, bitcoinclient, lightning);
   if (!(await u.loadByIdHash(req.params.id_hash))) {
@@ -284,7 +284,7 @@ router.get('/lnurlp/:id_hash/:memo/:amt', postLimiter, async function (req, res)
       info.pay_req = info.payment_request; // client backwards compatibility
       await u.saveUserInvoice(info);
       await invoice.savePreimage(r_preimage);
-      
+      logger.log('/lnurlp', [req.id, 'Invoice:' + invoice, 'r_preimage:' + r_preimage]);
       res.send({
         pr: invoice.payment_request,
         routes: []
