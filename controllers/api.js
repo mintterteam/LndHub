@@ -230,7 +230,7 @@ router.post('/lnurl', postLimiter, async function (req, res) {
 
 router.get('/fund', async function (req, res) {
   logger.log('/fund', [req.id]);
-  if (!req.body.amt || (req.body.amt < 0) || (req.body.amt > 1000000) || !req.query.id || !req.query.memo || !/^[a-zA-Z]+$/.test(req.query.memo) || req.query.memo.length > 64) return errorLnurlBadArguments(res);
+  if (!req.query.amt || (req.query.amt < 0) || (req.query.amt > 1000000) || !req.query.id || !req.query.memo || !/^[a-zA-Z]+$/.test(req.query.memo) || req.query.memo.length > 64) return errorLnurlBadArguments(res);
 
   let u = new User(redis, bitcoinclient, lightning);
   if (!(await u.loadByIdHash(req.query.id))) {
@@ -263,7 +263,7 @@ router.get('/fund', async function (req, res) {
 
 router.get('/lnurlp/:id_hash/:payment_hash', async function (req, res) {
   logger.log('/lnurlp', [req.id]);
-  if (!req.params.amount || (req.params.amount < 0)) return errorLnurlBadArguments(res);
+  if (!req.query.amount || (req.query.amount < 0)) return errorLnurlBadArguments(res);
 
   let u = new User(redis, bitcoinclient, lightning);
   if (!(await u.loadByIdHash(req.params.id_hash))) {
