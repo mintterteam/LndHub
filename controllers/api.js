@@ -215,7 +215,7 @@ router.post('/lnurl', postLimiter, async function (req, res) {
   }
   logger.log('/lnurl', [req.id, 'userid: ' + u.getUserId()]);
 
-  let url = config.lnurl+'/fund?id='+u.getUserId()+'&memo='+req.body.memo.replace(" ", "_")+'&amt='+req.body.amt;
+  let url = config.lnurl+'/fund?id='+req.body.id+'&memo='+req.body.memo.replace(" ", "_")+'&amt='+req.body.amt;
   logger.log('/lnurl', [req.id, 'url: ' + url]);
   let words = bech32.toWords(Buffer.from(url, 'utf8'));
   if (words.length > 250) {
