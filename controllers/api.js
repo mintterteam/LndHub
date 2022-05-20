@@ -257,6 +257,11 @@ router.get('/lnurlp/:id_hash/:memo/:amt', postLimiter, async function (req, res)
   logger.log('/lnurlp', [req.id]);
   if (!req.params.amt || (parseInt(req.params.amt, 10) < 0) || !req.query.amount || parseInt(req.query.amount,10) != parseInt(req.params.amt, 10) * 1000 || !req.params.memo || !req.params.id_hash) return errorLnurlBadArguments(res);
 
+  let u = new User(redis, bitcoinclient, lightning);
+  if (!(await u.loadByIdHash(req.params.id_hash))) {
+    return errorLnurlBadId(res);
+  }
+
   const invo = new Invo(redis, bitcoinclient, lightning);
   const r_preimage = invo.makePreimageHex();
 
@@ -279,19 +284,20 @@ router.get('/lnurlp/:id_hash/:memo/:amt', postLimiter, async function (req, res)
       info.pay_req = info.payment_request; // client backwards compatibility
       await u.saveUserInvoice(info);
       await invo.savePreimage(r_preimage);
-    
+
+      res.send({
+        pr: info.payment_request,
+        routes: []
+      });
+
     },
   );
 
+  /*
   let p_hash = require('crypto').createHash('sha256').update(Buffer.from(r_preimage, 'hex')).digest('hex')
   logger.log('/lnurlp', [req.id, 'p_hash:' + p_hash, 'r_preimage:' + r_preimage]);
 
   await new Promise(r => setTimeout(r, 1000));
-
-  let u = new User(redis, bitcoinclient, lightning);
-  if (!(await u.loadByIdHash(req.params.id_hash))) {
-    return errorLnurlBadId(res);
-  }
 
   const invoice = await u.lookupInvoice(p_hash);
   if (!invoice || !Object.keys(invoice).length) {
@@ -315,6 +321,7 @@ router.get('/lnurlp/:id_hash/:memo/:amt', postLimiter, async function (req, res)
     pr: invoice.payment_request,
     routes: []
   });
+  */
 });
 
 router.post('/payinvoice', async function (req, res) {
