@@ -244,8 +244,10 @@ router.get('/fund', postLimiter, async function (req, res) {
   const invoice = new Invo(redis, bitcoinclient, lightning);
   const r_preimage = invoice.makePreimageHex();
   let amount = parseInt(req.query.amt, 10)
+  let h = '[["text/plain", "'+req.query.memo+'"]]'
+  const description_h = require('crypto').createHash('sha256').update(Buffer.from(h, 'hex')).digest('hex')
   lightning.addInvoice(
-    { memo: req.query.memo, value: amount, expiry: 3600 * 24 * 3, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
+    { description_hash: description_h, value: amount, expiry: 3600 * 24 * 3, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
     async function (err, info) {
       if (err) return errorLnurlLND(res);
 
