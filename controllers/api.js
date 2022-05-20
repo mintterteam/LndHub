@@ -270,10 +270,10 @@ router.get('/lnurlp/:id_hash/:memo/:amt', postLimiter, async function (req, res)
   const description_h = require('crypto').createHash('sha256').update(Buffer.from(h)).digest('hex')
 
   let comment = require('crypto').createHash('sha256').update(Buffer.from(r_preimage, 'hex')).digest('hex')
-  if (req.query.comment) {
+  if (req.query.comment && req.query.comment.length > 0) {
     comment = req.query.comment
   } 
-
+  logger.log('coment:', [comment]);
   lightning.addInvoice(
     { memo: comment, description_hash: Buffer.from(description_h, 'hex').toString('base64'), value: amount, expiry: 3600 * 24 * 3, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
     async function (err, info) {
@@ -282,6 +282,7 @@ router.get('/lnurlp/:id_hash/:memo/:amt', postLimiter, async function (req, res)
         return errorLnurlLND(res);
       }
       info.pay_req = info.payment_request; // client backwards compatibility
+      info.d = comment
       await u.saveUserInvoice(info);
       await invo.savePreimage(r_preimage);
 
@@ -293,35 +294,6 @@ router.get('/lnurlp/:id_hash/:memo/:amt', postLimiter, async function (req, res)
     },
   );
 
-  /*
-  let p_hash = require('crypto').createHash('sha256').update(Buffer.from(r_preimage, 'hex')).digest('hex')
-  logger.log('/lnurlp', [req.id, 'p_hash:' + p_hash, 'r_preimage:' + r_preimage]);
-
-  await new Promise(r => setTimeout(r, 1000));
-
-  const invoice = await u.lookupInvoice(p_hash);
-  if (!invoice || !Object.keys(invoice).length) {
-    return errorLnurlNoInvoice(res);
-  }
-
-  logger.log('/lnurlp', [req.id, 'invoice' + invoice]);
-  if (invoice.settled) {
-    return errorLnurlAlreadyPaid(res);
-  }
-
-  if (invoice.state != "OPEN") {
-    return errorLnurlInvoiceNotOpened(res);
-  }
-
-  if (parseInt(invoice.value_msat,10) != parseInt(req.query.amount, 10)){
-    return errorLnurlBadAmount(res);
-  }
-
-  res.send({
-    pr: invoice.payment_request,
-    routes: []
-  });
-  */
 });
 
 router.post('/payinvoice', async function (req, res) {
