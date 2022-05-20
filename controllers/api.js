@@ -267,7 +267,7 @@ router.get('/fund', async function (req, res) {
 
 router.get('/lnurlp/:id_hash/:payment_hash', async function (req, res) {
   logger.log('/lnurlp', [req.id]);
-  if (!req.query.amount || (parseInt(req.query.amount, 10) < 0) || !req.params.payment_hash || req.params.id_hash) return errorLnurlBadArguments(res);
+  if (!req.query.amount || (parseInt(req.query.amount, 10) < 0) || !req.params.payment_hash || !req.params.id_hash) return errorLnurlBadArguments(res);
 
   let u = new User(redis, bitcoinclient, lightning);
   if (!(await u.loadByIdHash(req.params.id_hash))) {
