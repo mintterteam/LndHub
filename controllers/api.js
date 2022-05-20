@@ -5,7 +5,6 @@ let express = require('express');
 let router = express.Router();
 let logger = require('../utils/logger');
 let { bech32 }  = require("bech32")
-var crypto = require('crypto');
 const MIN_BTC_BLOCK = 670000;
 if (process.env.NODE_ENV !== 'prod') {
   console.log('using config', JSON.stringify(config));
@@ -255,7 +254,7 @@ router.get('/fund', async function (req, res) {
       await invoice.savePreimage(r_preimage);
       
       res.send({
-        callback: url+crypto.createHash('sha256').update(r_preimage).digest().toString('hex')(), 
+        callback: url+invoice.payment_hash, 
         maxSendable: amount * 1000,                      
         minSendable: amount * 1000,                      
         metadata: '[[\"text/plain\", \"'+req.query.memo+'\"]]', 
