@@ -228,7 +228,7 @@ router.post('/lnurl', postLimiter, async function (req, res) {
   
 });
 
-router.get('/fund', async function (req, res) {
+router.get('/fund', postLimiter, async function (req, res) {
   logger.log('/fund', [req.id]);
   
   if (!req.query.amt || (parseInt(req.query.amt, 10) < 0) || (parseInt(req.query.amt, 10) > 1000000) || !req.query.id || !req.query.memo || !/^[a-zA-Z]+$/.test(req.query.memo) || req.query.memo.length > 64) {
@@ -265,7 +265,7 @@ router.get('/fund', async function (req, res) {
   
 });
 
-router.get('/lnurlp/:id_hash/:payment_hash', async function (req, res) {
+router.get('/lnurlp/:id_hash/:payment_hash', postLimiter, async function (req, res) {
   logger.log('/lnurlp', [req.id]);
   if (!req.query.amount || (parseInt(req.query.amount, 10) < 0) || !req.params.payment_hash || !req.params.id_hash) return errorLnurlBadArguments(res);
 
