@@ -230,8 +230,11 @@ router.post('/lnurl', postLimiter, async function (req, res) {
 
 router.get('/fund', async function (req, res) {
   logger.log('/fund', [req.id]);
-  if (!req.query.amt || (req.query.amt < 0) || (req.query.amt > 1000000) || !req.query.id || !req.query.memo || !/^[a-zA-Z]+$/.test(req.query.memo) || req.query.memo.length > 64) return errorLnurlBadArguments(res);
-
+  
+  if (!req.query.amt || (parseInt(req.query.amt, 10) < 0) || (parseInt(req.query.amt, 10) > 1000000) || !req.query.id || !req.query.memo || !/^[a-zA-Z]+$/.test(req.query.memo) || req.query.memo.length > 64) {
+    logger.log('req.query', [req.query])
+    return errorLnurlBadArguments(res);
+  }
   let u = new User(redis, bitcoinclient, lightning);
   if (!(await u.loadByIdHash(req.query.id))) {
     return errorLnurlBadId(res);
@@ -240,8 +243,9 @@ router.get('/fund', async function (req, res) {
   let url = config.lnurl+'/lnurlp/'+req.query.id+'/'
   const invoice = new Invo(redis, bitcoinclient, lightning);
   const r_preimage = invoice.makePreimageHex();
+  let amount = parseInt(req.query.amt, 10)
   lightning.addInvoice(
-    { memo: req.query.memo, value: req.query.amt, expiry: 3600 * 24 * 3, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
+    { memo: req.query.memo, value: amount, expiry: 3600 * 24 * 3, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
     async function (err, info) {
       if (err) return errorLnurlLND(res);
 
@@ -251,8 +255,8 @@ router.get('/fund', async function (req, res) {
       
       res.send({
         callback: url+crypto.createHash('sha256').update(r_preimage).digest().toString('hex')(), 
-        maxSendable: req.query.amt * 1000,                      
-        minSendable: req.query.amt * 1000,                      
+        maxSendable: amount * 1000,                      
+        minSendable: amount * 1000,                      
         metadata: '[[\"text/plain\", \"'+req.query.memo+'\"]]', 
         tag: "payRequest"                                       
       });
