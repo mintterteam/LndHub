@@ -240,7 +240,8 @@ router.get('/fund', postLimiter, async function (req, res) {
     return errorLnurlBadId(res);
   }
   logger.log('/fund', [req.id, 'userid: ' + u.getUserId()]);
-  let url = config.lnurl+'/lnurlp/'+req.query.id+'/'+req.query.memo+'/'+amount.toString(10)
+  let amount = parseInt(req.query.amt, 10)
+  let url = config.lnurl+'/lnurlp/'+req.query.id+'/'+req.query.memo+'/'+amount
   res.send({
     callback: url, 
     maxSendable: amount * 1000,                      
@@ -272,7 +273,7 @@ router.get('/lnurlp/:id_hash/:memo/:amt', postLimiter, async function (req, res)
   if (req.query.comment) {
     comment = req.query.comment
   } 
-  
+
   lightning.addInvoice(
     { memo: comment, description_hash: Buffer.from(description_h, 'hex').toString('base64'), value: amount, expiry: 3600 * 24 * 3, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
     async function (err, info) {
