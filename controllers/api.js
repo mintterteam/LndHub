@@ -245,7 +245,7 @@ router.get('/fund', postLimiter, async function (req, res) {
   const r_preimage = invoice.makePreimageHex();
   let amount = parseInt(req.query.amt, 10)
   let h = '[["text/plain", "'+req.query.memo+'"]]'
-  const description_h = require('crypto').createHash('sha256').update(Buffer.from(h, 'hex')).digest('hex')
+  const description_h = require('crypto').createHash('sha256').update(Buffer.from(h)).digest('hex')
   lightning.addInvoice(
     { description_hash: Buffer.from(description_h, 'hex').toString('hex'), value: amount, expiry: 3600 * 24 * 3, r_preimage: Buffer.from(r_preimage, 'hex').toString('base64') },
     async function (err, info) {
