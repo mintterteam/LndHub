@@ -290,8 +290,8 @@ export class User {
       invoice = JSON.parse(invoice);
       let decoded = lightningPayReq.decode(invoice.payment_request);
       invoice.description = '';
-      if (invoice.description){
-        invoice.description = invoice.description;
+      if (invoice.comment){
+        invoice.description = invoice.comment;
       }
       
       for (let tag of decoded.tags) {
